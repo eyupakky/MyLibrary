@@ -1,0 +1,73 @@
+{
+  "project_info": {
+    "project_number": "371004411030",
+    "firebase_url": "https://follow-8fd92.firebaseio.com",
+    "project_id": "follow-8fd92",
+    "storage_bucket": "follow-8fd92.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371004411030:android:f5a91c1a736db591",
+        "android_client_info": {
+          "package_name": "bildirbana.takipciler"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "371004411030-e8vh3ie9bdp6kiusjitsgjdairdbt1iu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAE4SsLi-xcZDSEO2l2Ckwg3Eb3ImdxAds"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371004411030:android:7ed29a3746b773f8",
+        "android_client_info": {
+          "package_name": "com.eyupakky.mylibrary"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "371004411030-e8vh3ie9bdp6kiusjitsgjdairdbt1iu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAE4SsLi-xcZDSEO2l2Ckwg3Eb3ImdxAds"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
