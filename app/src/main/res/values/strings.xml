@@ -6,4 +6,5 @@
     <string name="loginHatasi">Hata Oluştu</string>
     <string name="kitapekle">Kitap\n Ekle</string>
     <string name="resimsec">Resim Seç</string>
+    <string name="girisyap">Lütfen Giriş Yapınız</string>
 </resources>

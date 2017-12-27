@@ -1,28 +1,28 @@
 package com.eyupakky.mylibrary;
 
-import android.app.Activity;
+import android.Manifest;
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.design.widget.BottomNavigationView;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AlertDialog;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.Auth;
@@ -32,9 +32,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.shaz.library.erp.RuntimePermissionHandler;
-import com.shaz.library.erp.RuntimePermissionUtils;
+import com.squareup.picasso.Picasso;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,9 +47,12 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener,View.OnClickListener{
     private ImageView addBook,login;
+    SharedPreferences preferences ;
+    SharedPreferences.Editor editor;
+    private int PICK_IMAGE_REQUEST = 1;
     public static String BASE_URL="";
     private static int IMG_RESULT = 1;
-    private final int REQ_CODE_CAMERA_PERMISSION = 1001;
+    private final int STORAGE_PERMISSION_CODE = 23;
     RetrofitInterface retrofitInterface;
     Retrofit retrofit;
     RecyclerView recyclerView;
@@ -59,6 +63,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        editor = preferences.edit();
+        setListData();
         addBook=(ImageView)findViewById(R.id.addBook);
         login=(ImageView)findViewById(R.id.login);
         addBook.setOnClickListener(this);
@@ -71,6 +78,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 .enableAutoManage(this,this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API,googleSignInOptions)
                 .build();
+        if(isReadStorageAllowed()){
+            return;
+        }
+        requestStoragePermission();
         /*
         retrofit =new Retrofit.Builder()
                 .baseUrl(BASE_URL)
@@ -78,13 +89,39 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 .build();
         retrofitInterface=retrofit.create(RetrofitInterface.class);
         */
-        setListData();
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        RuntimePermissionHandler.onRequestPermissionsResult(this, requestCode, permissions, grantResults);
+        //Checking the request code of our request
+        if(requestCode == STORAGE_PERMISSION_CODE){
+
+            //If permission is granted
+            if(grantResults.length >0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+            }else{
+                Toast.makeText(this,"Oops you just denied the permission",Toast.LENGTH_LONG).show();
+            }
+        }
     }
+
+    private boolean isReadStorageAllowed() {
+        //Getting the permission status
+        int result = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+
+        //If permission is granted returning true
+        if (result == PackageManager.PERMISSION_GRANTED)
+            return true;
+        return false;
+    }
+
+    private void requestStoragePermission(){
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.READ_EXTERNAL_STORAGE)){
+        }
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},STORAGE_PERMISSION_CODE);
+    }
+
+
     private void showDialog(){
         final Dialog mBottomSheetDialog = new Dialog (MainActivity.this,
                 R.style.MaterialDialogSheet);
@@ -147,13 +184,31 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        //google ile giriş yapmak için yazıldı.
         if (requestCode==SIGN_IN_CODE ){
             GoogleSignInResult result= Auth.GoogleSignInApi.getSignInResultFromIntent(data);
             handleSignResult(result);
         }
+        //Galeriden resimi alarak base64 formatına çeviriyorum.
+        else if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            Uri uri = data.getData();
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.PNG, 50, byteArrayOutputStream);
+                byte[] byteArray = byteArrayOutputStream .toByteArray();
+                String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
     private void handleSignResult(GoogleSignInResult result) {
         if (result.isSuccess()){
+            editor.putString("resim",String.valueOf(result.getSignInAccount().getPhotoUrl()));
+            editor.putString("email",String.valueOf(result.getSignInAccount().getEmail()));
+            editor.putString("myid",result.getSignInAccount().getId());
+            Picasso.with(this).load(String.valueOf(result.getSignInAccount().getPhotoUrl())).into(login);
             Log.e(String.valueOf(result.getSignInAccount().getPhotoUrl()),result.getSignInAccount().getEmail()
             +" *** "+ result.getSignInAccount().getId()+" *** " + result.getSignInAccount().getDisplayName());
         } else{
@@ -167,75 +222,26 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 showDialog();
                 break;
             case R.id.addBook:
+                if (!preferences.getString("myid","-").equals("-"))
                 showAddDialog();
+                else {
+                    showDialog();
+                    Toast.makeText(this, getString(R.string.girisyap), Toast.LENGTH_LONG).show();
+                }
                 break;
             case R.id.signButton:
                 Intent intent=Auth.GoogleSignInApi.getSignInIntent(googleApi);
                 startActivityForResult(intent,SIGN_IN_CODE );
                 break;
             case R.id.cameraOpen:
-                openCamera(view);
                 break;
         }
     }
-    public void openCamera(View view) {
-        RuntimePermissionHandler.requestPermission(REQ_CODE_CAMERA_PERMISSION, this, mPermissionListener, RuntimePermissionUtils.StoragePermission);
+    private void openGallery(){
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
     }
 
-    private RuntimePermissionHandler.PermissionListener mPermissionListener = new RuntimePermissionHandler.PermissionListener() {
-        @Override
-        public void onRationale(final @NonNull RuntimePermissionHandler.PermissionRequest permissionRequest, final Activity target, final int requestCode, @NonNull final String[] permissions) {
-        }
-
-        @Override
-        public void onAllowed(int requestCode, @NonNull String[] permissions) {
-            switch (requestCode) {
-                case REQ_CODE_CAMERA_PERMISSION:
-                    openCamera();
-                    break;
-            }
-        }
-
-        @Override
-        public void onDenied(final @NonNull RuntimePermissionHandler.PermissionRequest permissionRequest, Activity target, int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults, RuntimePermissionHandler.DENIED_REASON deniedReason) {
-            if (deniedReason == RuntimePermissionHandler.DENIED_REASON.USER) {
-                switch (requestCode) {
-                    case REQ_CODE_CAMERA_PERMISSION:
-                        Toast.makeText(target, "Hata", Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        }
-
-        @Override
-        public void onNeverAsk(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-            switch (requestCode) {
-                case REQ_CODE_CAMERA_PERMISSION:
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setPositiveButton("Evet", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(@NonNull DialogInterface dialog, int which) {
-                                    RuntimePermissionUtils.openAppSettings(MainActivity.this);
-                                }
-                            })
-                            .setNegativeButton("Hayır", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(@NonNull DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            })
-                            .setCancelable(false)
-                            .setMessage("İzin")
-                            .show();
-                    break;
-            }
-        }
-    };
-
-    private void openCamera() {
-        Intent intent;
-        intent = new Intent(Intent.ACTION_PICK,
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, IMG_RESULT);
-    }
 }
