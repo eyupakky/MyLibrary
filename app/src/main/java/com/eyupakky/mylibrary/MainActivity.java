@@ -2,12 +2,14 @@ package com.eyupakky.mylibrary;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
@@ -45,14 +47,15 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener,View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements
+        GoogleApiClient.OnConnectionFailedListener,View.OnClickListener{
     private ImageView addBook,login;
     SharedPreferences preferences ;
     SharedPreferences.Editor editor;
     private int PICK_IMAGE_REQUEST = 1;
     public static String BASE_URL="";
     private static int IMG_RESULT = 1;
-    private final int STORAGE_PERMISSION_CODE = 23;
+    int PERMISSION_ALL = 1;
     RetrofitInterface retrofitInterface;
     Retrofit retrofit;
     RecyclerView recyclerView;
@@ -78,10 +81,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 .enableAutoManage(this,this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API,googleSignInOptions)
                 .build();
-        if(isReadStorageAllowed()){
-            return;
+        String[] PERMISSIONS = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+
+        if(!hasPermissions(this, PERMISSIONS)){
+            ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
-        requestStoragePermission();
         /*
         retrofit =new Retrofit.Builder()
                 .baseUrl(BASE_URL)
@@ -94,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         //Checking the request code of our request
-        if(requestCode == STORAGE_PERMISSION_CODE){
+        if(requestCode == PERMISSION_ALL){
 
             //If permission is granted
             if(grantResults.length >0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
@@ -104,23 +108,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         }
     }
 
-    private boolean isReadStorageAllowed() {
-        //Getting the permission status
-        int result = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-
-        //If permission is granted returning true
-        if (result == PackageManager.PERMISSION_GRANTED)
-            return true;
-        return false;
-    }
-
-    private void requestStoragePermission(){
-
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.READ_EXTERNAL_STORAGE)){
+    public static boolean hasPermissions(Context context, String... permissions) {
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
         }
-        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},STORAGE_PERMISSION_CODE);
+        return true;
     }
-
 
     private void showDialog(){
         final Dialog mBottomSheetDialog = new Dialog (MainActivity.this,
@@ -222,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 showDialog();
                 break;
             case R.id.addBook:
-                if (!preferences.getString("myid","-").equals("-"))
+                if (preferences.getString("myid","-").equals("-"))
                 showAddDialog();
                 else {
                     showDialog();
@@ -234,6 +231,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 startActivityForResult(intent,SIGN_IN_CODE );
                 break;
             case R.id.cameraOpen:
+                Intent i=new Intent(this,ScannerActivity.class);
+                startActivity(i);
                 break;
         }
     }
