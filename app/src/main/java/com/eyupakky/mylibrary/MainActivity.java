@@ -27,6 +27,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.eyupakky.mylibrary.Pojo.BookPojo;
+import com.eyupakky.mylibrary.Pojo.SetBookData;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInApi;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -34,7 +36,13 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.squareup.picasso.Picasso;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -50,11 +58,11 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,View.OnClickListener{
     private ImageView addBook,login;
+    public static String userId;
     SharedPreferences preferences ;
     SharedPreferences.Editor editor;
     private int PICK_IMAGE_REQUEST = 1;
-    public static String BASE_URL="";
-    private static int IMG_RESULT = 1;
+    private String baseUrl="https://www.googleapis.com/books/v1/";
     int PERMISSION_ALL = 1;
     RetrofitInterface retrofitInterface;
     Retrofit retrofit;
@@ -62,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements
     private GoogleApiClient googleApi;
     private SignInButton signButton;
     public static final int SIGN_IN_CODE=777;
+    FirebaseSetDataAndGetData fire;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,13 +96,13 @@ public class MainActivity extends AppCompatActivity implements
         if(!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
-        /*
+
         retrofit =new Retrofit.Builder()
-                .baseUrl(BASE_URL)
+                .baseUrl(baseUrl)
                 .addConverterFactory( GsonConverterFactory.create())
                 .build();
         retrofitInterface=retrofit.create(RetrofitInterface.class);
-        */
+
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -159,16 +169,18 @@ public class MainActivity extends AppCompatActivity implements
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(itemAdapter);
     }
-    private void getData(){
-        Call<List<String>>call=retrofitInterface.getData();
-        call.enqueue(new Callback<List<String>>() {
+    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
+    public void onEvent(String isbn){
+        Toast.makeText(this,isbn,Toast.LENGTH_LONG).show();
+        Call<BookPojo>call=retrofitInterface.setData("isbn:"+isbn);
+        call.enqueue(new Callback<BookPojo>() {
             @Override
-            public void onResponse(Call<List<String>> call, Response<List<String>> response) {
+            public void onResponse(Call<BookPojo> call, Response<BookPojo> response) {
                 if (response.isSuccessful()){
                 }
             }
             @Override
-            public void onFailure(Call<List<String>> call, Throwable t) {
+            public void onFailure(Call<BookPojo> call, Throwable t) {
                 Logger.e(t.getMessage());
             }
         });
@@ -205,6 +217,8 @@ public class MainActivity extends AppCompatActivity implements
             editor.putString("resim",String.valueOf(result.getSignInAccount().getPhotoUrl()));
             editor.putString("email",String.valueOf(result.getSignInAccount().getEmail()));
             editor.putString("myid",result.getSignInAccount().getId());
+            editor.commit();
+            fire=new FirebaseSetDataAndGetData(result.getSignInAccount().getId());
             Picasso.with(this).load(String.valueOf(result.getSignInAccount().getPhotoUrl())).into(login);
             Log.e(String.valueOf(result.getSignInAccount().getPhotoUrl()),result.getSignInAccount().getEmail()
             +" *** "+ result.getSignInAccount().getId()+" *** " + result.getSignInAccount().getDisplayName());
@@ -241,6 +255,18 @@ public class MainActivity extends AppCompatActivity implements
         intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+    }
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+        userId=preferences.getString("myid","-1");
+        Picasso.with(this).load(preferences.getString("resim","-1")).error(R.mipmap.human).into(login);
+    }
+    @Override
+    public void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
     }
 
 }

@@ -8,6 +8,8 @@ import android.view.ViewGroup;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.Result;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,7 @@ import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
 public class ScannerActivity extends AppCompatActivity implements ZXingScannerView.ResultHandler{
     private ZXingScannerView mScannerView;
+    private boolean ibnRead=true;
     private ArrayList<Integer> mSelectedIndices;
     private static String TAG="SCANNER_ACTİVİTY";
     private boolean mAutoFocus;
@@ -63,13 +66,24 @@ public class ScannerActivity extends AppCompatActivity implements ZXingScannerVi
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mScannerView.stopCamera();
+    }
+
+    private void bus(String ibn){
+        ibnRead=false;
+        EventBus.getDefault().postSticky(ibn);
+        finish();
+    }
+    @Override
     public void handleResult(Result rawResult) {
         // Do something with the result here
         Log.e(TAG, rawResult.getText()); // Prints scan results
-        Log.e(TAG, rawResult.getBarcodeFormat().toString()); // Prints the scan format (qrcode, pdf417 etc.)
-
-        // If you would like to resume scanning, call this method below:
+        Log.e(TAG, rawResult.getBarcodeFormat().toString());
         mScannerView.resumeCameraPreview(this);
+        if (ibnRead)
+        bus(rawResult.getText());
     }
 }
 
