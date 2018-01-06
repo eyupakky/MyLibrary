@@ -5,6 +5,9 @@
     <string name="title_notifications">Notifications</string>
     <string name="loginHatasi">Hata Oluştu</string>
     <string name="kitapekle">Kitap\n Ekle</string>
-    <string name="resimsec">Resim Seç</string>
+    <string name="resimsec">Barkod Okut</string>
     <string name="girisyap">Lütfen Giriş Yapınız</string>
+    <string name="yazar">Yazar</string>
+    <string name="addbook">Kitap Ekle</string>
+    <string name="bilgibulunamadi">Kitap Hakkında Bilgi Bulunamadı. Lütfen Daha Sonra Deneyiniz..</string>
 </resources>

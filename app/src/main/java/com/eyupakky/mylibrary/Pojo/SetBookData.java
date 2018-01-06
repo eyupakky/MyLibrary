@@ -1,12 +1,14 @@
 package com.eyupakky.mylibrary.Pojo;
 
+import java.util.List;
+
 /**
  * Created by eyupakkaya on 6.01.2018.
  */
 
 public class SetBookData {
     private String bookName;
-    private String bookAuthorName;
+    private List<String> bookAuthorName;
     private String bookImageUri;
     private String bookExplanation;
     private String bookId;
@@ -17,14 +19,6 @@ public class SetBookData {
 
     public void setBookName(String bookName) {
         this.bookName = bookName;
-    }
-
-    public String getBookAuthorName() {
-        return bookAuthorName;
-    }
-
-    public void setBookAuthorName(String bookAuthorName) {
-        this.bookAuthorName = bookAuthorName;
     }
 
     public String getBookImageUri() {
@@ -49,5 +43,13 @@ public class SetBookData {
 
     public void setBookId(String bookId) {
         this.bookId = bookId;
+    }
+
+    public List<String> getBookAuthorName() {
+        return bookAuthorName;
+    }
+
+    public void setBookAuthorName(List<String> bookAuthorName) {
+        this.bookAuthorName = bookAuthorName;
     }
 }

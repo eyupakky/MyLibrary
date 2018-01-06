@@ -1,6 +1,7 @@
 package com.eyupakky.mylibrary;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -23,12 +24,15 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.eyupakky.mylibrary.Pojo.BookPojo;
 import com.eyupakky.mylibrary.Pojo.SetBookData;
+import com.eyupakky.mylibrary.Pojo.User;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInApi;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -58,6 +62,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,View.OnClickListener{
     private ImageView addBook,login;
+    Dialog dialog;
     public static String userId;
     SharedPreferences preferences ;
     SharedPreferences.Editor editor;
@@ -71,14 +76,17 @@ public class MainActivity extends AppCompatActivity implements
     private SignInButton signButton;
     public static final int SIGN_IN_CODE=777;
     FirebaseSetDataAndGetData fire;
+    public ItemAdapter itemAdapter;
+    SetBookData setBookData;
+    List<SetBookData>bookDatas;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        bookDatas=new ArrayList<>();
         preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         editor = preferences.edit();
-        setListData();
         addBook=(ImageView)findViewById(R.id.addBook);
         login=(ImageView)findViewById(R.id.login);
         addBook.setOnClickListener(this);
@@ -142,7 +150,7 @@ public class MainActivity extends AppCompatActivity implements
         signButton.setOnClickListener(this);
     }
     private void showAddDialog(){
-        final Dialog dialog = new Dialog (MainActivity.this,
+        dialog = new Dialog (MainActivity.this,
                 R.style.MaterialDialogSheet);
         dialog.setContentView (R.layout.add_book);
         dialog.setCancelable (true);
@@ -150,33 +158,62 @@ public class MainActivity extends AppCompatActivity implements
                 LinearLayout.LayoutParams.MATCH_PARENT);
         dialog.getWindow ().setGravity (Gravity.BOTTOM);
         dialog.findViewById(R.id.cameraOpen).setOnClickListener(this);
+        dialog.findViewById(R.id.newBookAdd).setOnClickListener(this);
         dialog.show ();
     }
-    private void setListData() {
+    @Subscribe
+    public void setListData(List<SetBookData> data) {
         recyclerView=(RecyclerView)findViewById(R.id.recyclerView);
         LinearLayoutManager manager =new LinearLayoutManager(this);
         manager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(manager);
-        List<String>list =new ArrayList<>();
-        list.add("Olasılıksız");
-        list.add("Kurtlarla Dans");
-        ItemAdapter itemAdapter = new ItemAdapter(list, new ItemClickListener() {
+        itemAdapter = new ItemAdapter(data, new ItemClickListener() {
             @Override
             public void onItemClickListener(View v, int position) {
 
             }
         });
+        clearManager();
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(itemAdapter);
     }
+    public void clearManager(){
+        itemAdapter.notifyDataSetChanged();
+    }
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
-    public void onEvent(String isbn){
+    public void onEvent(final String isbn){
         Toast.makeText(this,isbn,Toast.LENGTH_LONG).show();
         Call<BookPojo>call=retrofitInterface.setData("isbn:"+isbn);
         call.enqueue(new Callback<BookPojo>() {
+            @SuppressLint("WrongViewCast")
             @Override
             public void onResponse(Call<BookPojo> call, Response<BookPojo> response) {
                 if (response.isSuccessful()){
+                    setBookData=new SetBookData();
+                    setBookData.setBookId(isbn);
+                    EditText bookName = dialog.findViewById(R.id.bookName);
+                    TextView author=dialog.findViewById(R.id.textViewYazar);
+                    ImageView imageView=dialog.findViewById(R.id.imageViewBook);
+                    if (response.body().getItems()!=null) {
+                        if (response.body().getItems().get(0).getVolumeInfo().getImageLinks()!=null) {
+                            setBookData.setBookImageUri(response.body().getItems().get(0).getVolumeInfo().getImageLinks().getSmallThumbnail());
+                            Picasso.with(MainActivity.this).load(setBookData.getBookImageUri()).into(imageView);
+                        }
+                        setBookData.setBookName(response.body().getItems().get(0).getVolumeInfo().getTitle());
+                        bookName.setText(setBookData.getBookName());
+
+                        if (response.body().getItems() != null) {
+                            if (response.body().getItems().get(0).getVolumeInfo().getAuthors()!=null) {
+                                setBookData.setBookAuthorName(response.body().getItems().get(0).getVolumeInfo().getAuthors());
+                                for (int i = 0; i < setBookData.getBookAuthorName().size(); i++)
+                                    author.setText(setBookData.getBookAuthorName().get(i));
+                            }
+                        }
+                    }
+                    else{
+                        Toast.makeText(MainActivity.this,getString(R.string.bilgibulunamadi),Toast.LENGTH_LONG).show();
+                    }
+
                 }
             }
             @Override
@@ -185,10 +222,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
     }
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -218,7 +252,10 @@ public class MainActivity extends AppCompatActivity implements
             editor.putString("email",String.valueOf(result.getSignInAccount().getEmail()));
             editor.putString("myid",result.getSignInAccount().getId());
             editor.commit();
-            fire=new FirebaseSetDataAndGetData(result.getSignInAccount().getId());
+            User user = new User();
+            user.setId(result.getSignInAccount().getId());
+            user.setName(result.getSignInAccount().getDisplayName());
+            fire=new FirebaseSetDataAndGetData(user);
             Picasso.with(this).load(String.valueOf(result.getSignInAccount().getPhotoUrl())).into(login);
             Log.e(String.valueOf(result.getSignInAccount().getPhotoUrl()),result.getSignInAccount().getEmail()
             +" *** "+ result.getSignInAccount().getId()+" *** " + result.getSignInAccount().getDisplayName());
@@ -233,7 +270,7 @@ public class MainActivity extends AppCompatActivity implements
                 showDialog();
                 break;
             case R.id.addBook:
-                if (preferences.getString("myid","-").equals("-"))
+                if (!preferences.getString("myid","-").equals("-"))
                 showAddDialog();
                 else {
                     showDialog();
@@ -247,6 +284,10 @@ public class MainActivity extends AppCompatActivity implements
             case R.id.cameraOpen:
                 Intent i=new Intent(this,ScannerActivity.class);
                 startActivity(i);
+                break;
+            case R.id.newBookAdd:
+                setBookData.setBookExplanation(((EditText)dialog.findViewById(R.id.editTextExplanation)).getText().toString());
+                fire=new FirebaseSetDataAndGetData(setBookData);
                 break;
         }
     }
@@ -262,6 +303,10 @@ public class MainActivity extends AppCompatActivity implements
         EventBus.getDefault().register(this);
         userId=preferences.getString("myid","-1");
         Picasso.with(this).load(preferences.getString("resim","-1")).error(R.mipmap.human).into(login);
+        if (!userId.equals("-1")) {
+            fire = new FirebaseSetDataAndGetData();
+            fire.getData(userId);
+        }
     }
     @Override
     public void onStop() {
@@ -269,4 +314,8 @@ public class MainActivity extends AppCompatActivity implements
         EventBus.getDefault().unregister(this);
     }
 
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Toast.makeText(this,R.string.loginHatasi,Toast.LENGTH_LONG).show();
+    }
 }

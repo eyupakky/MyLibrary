@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.eyupakky.mylibrary.Pojo.SetBookData;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -19,10 +20,10 @@ import java.util.List;
 
 public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     ItemClickListener itemClickListener;
-    List<String>list;
+    List<SetBookData>list;
     Context context;
 
-    public ItemAdapter(List<String>list,ItemClickListener itemClickListener){
+    public ItemAdapter(List<SetBookData>list, ItemClickListener itemClickListener){
         this.itemClickListener=itemClickListener;
         this.list=list;
     }
@@ -42,10 +43,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        String data = list.get(position);
+        SetBookData data = list.get(position);
         Picasso.with(context).load(R.mipmap.ic_launcher_round).into(holder.bookImage);
-        holder.header.setText(data);
-        holder.explanation.setText(data);
+        holder.header.setText(data.getBookName());
+        holder.explanation.setText(data.getBookExplanation());
+        Picasso.with(context).load(data.getBookImageUri()).into(holder.bookImage);
     }
 
     @Override
