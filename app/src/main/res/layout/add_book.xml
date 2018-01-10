@@ -46,6 +46,7 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_below="@+id/bookName"
+            android:layout_marginRight="5dp"
             android:layout_toLeftOf="@+id/cameraOpen"
             android:layout_toStartOf="@+id/cameraOpen"
             android:ellipsize="end"
@@ -69,7 +70,7 @@
             android:lines="5"
             android:padding="3dp" />
 
-        <TextView
+        <EditText
             android:id="@+id/textViewYazar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -81,7 +82,7 @@
             android:layout_toLeftOf="@+id/imageViewBook"
             android:layout_toStartOf="@+id/imageViewBook"
             android:gravity="center"
-            android:text="@string/yazar"
+            android:hint="@string/yazar"
             android:textColor="@android:color/black"
             android:textSize="12sp" />
 

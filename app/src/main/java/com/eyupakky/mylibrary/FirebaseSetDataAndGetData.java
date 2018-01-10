@@ -31,20 +31,28 @@ public class FirebaseSetDataAndGetData {
     //Firebase kitap ekleme
     public FirebaseSetDataAndGetData(SetBookData object){
         myRef = database.getReference("user");
+        if (object.getBookId()!=null)
         myRef.child(MainActivity.userId).child(object.getBookId()).setValue(object);
+        else {
+            myRef = FirebaseDatabase.getInstance().getReference("user");
+            object.setBookId(myRef.push().getKey());
+            myRef.child(MainActivity.userId).child(object.getBookId()).setValue(object);
+        }
         myRef = database.getReference("books");
         myRef.child(MainActivity.userId).child(object.getBookId()).setValue(object);
     }
     public List<SetBookData> getData(String userId){
         myRef = database.getReference("user/"+userId);
-        EventBus.getDefault().post(new User());
         data=new ArrayList<>();
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for(DataSnapshot dataSnapshot1:dataSnapshot.getChildren())
                 data.add(dataSnapshot1.getValue(SetBookData.class));
-                EventBus.getDefault().post(data);
+                if (MainActivity.first){
+                    EventBus.getDefault().post(data);
+                    MainActivity.first=false;
+                }
                 return;
             }
             @Override
@@ -60,15 +68,17 @@ public class FirebaseSetDataAndGetData {
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                String value = dataSnapshot.getValue(String.class);
-                Log.d(TAG, "Value is: " + value);
-                if (value==null){
-                    myRef = database.getReference("user");
-                    myRef.child(user.getId()).setValue(user.getId());
-                    myRef = database.getReference("users");
-                    myRef.child(user.getId()).setValue(user);
-
+                try {
+                    String value = dataSnapshot.getValue(String.class);
+                    Log.d(TAG, "Value is: " + value);
+                    if (value==null){
+                        myRef = database.getReference("user");
+                        myRef.child(user.getId()).setValue(user.getId());
+                        myRef = database.getReference("users");
+                        myRef.child(user.getId()).setValue(user);
+                    }
                 }
+                catch (Exception e) {}
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
