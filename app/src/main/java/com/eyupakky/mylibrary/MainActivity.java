@@ -227,6 +227,7 @@ public class MainActivity extends AppCompatActivity implements
     public void updateList(List<SetBookData>oldDatas,List<SetBookData>newDatas) {
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new MyDiffCallBack(oldDatas,newDatas));
         diffResult.dispatchUpdatesTo(itemAdapter);
+
     }
     public void clearManager(){
         itemAdapter.notifyDataSetChanged();
