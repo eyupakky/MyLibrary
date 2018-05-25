@@ -12,7 +12,7 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 /**
- * Created by eyupakkaya on 24.12.2017.
+ *Created by eyupakkaya on 10.03.2018.
  */
 
 public interface RetrofitInterface {

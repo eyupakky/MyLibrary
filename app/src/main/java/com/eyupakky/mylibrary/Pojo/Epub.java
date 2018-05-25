@@ -1,7 +1,7 @@
 package com.eyupakky.mylibrary.Pojo;
 
 /**
- * Created by eyupakkaya on 5.01.2018.
+ * Created by eyupakkaya on 10.03.2018.
  */
 
 import com.google.gson.annotations.Expose;

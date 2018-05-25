@@ -3,7 +3,7 @@ package com.eyupakky.mylibrary;
 import android.view.View;
 
 /**
- * Created by eyupakkaya on 24.12.2017.
+ * Created by eyupakkaya on 10.03.2018.
  */
 
 public interface ItemClickListener {

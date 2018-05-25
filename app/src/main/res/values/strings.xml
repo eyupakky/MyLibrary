@@ -9,5 +9,6 @@
     <string name="girisyap">Lütfen Giriş Yapınız</string>
     <string name="yazar">Yazar</string>
     <string name="addbook">Kitap Ekle</string>
+    <string name="deleteBook">Kitap Sil</string>
     <string name="bilgibulunamadi">Kitap Hakkında Bilgi Bulunamadı. Lütfen Daha Sonra Deneyiniz..</string>
 </resources>

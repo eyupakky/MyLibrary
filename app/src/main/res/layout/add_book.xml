@@ -22,6 +22,7 @@
         android:background="@drawable/radius"
         android:padding="15dp">
 
+
         <EditText
             android:id="@+id/bookName"
             android:layout_width="match_parent"
@@ -57,7 +58,6 @@
             android:id="@+id/editTextExplanation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_above="@+id/newBookAdd"
             android:layout_alignParentEnd="true"
             android:layout_alignParentLeft="true"
             android:layout_alignParentRight="true"
@@ -68,7 +68,8 @@
             android:gravity="top|left"
             android:inputType="textMultiLine"
             android:lines="5"
-            android:padding="3dp" />
+            android:padding="3dp"
+            android:layout_above="@+id/linearLayout" />
 
         <EditText
             android:id="@+id/textViewYazar"
@@ -86,19 +87,38 @@
             android:textColor="@android:color/black"
             android:textSize="12sp" />
 
-        <Button
-            android:id="@+id/newBookAdd"
-            android:layout_width="wrap_content"
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
-            android:layout_alignParentLeft="true"
             android:layout_alignParentRight="true"
-            android:layout_alignParentStart="true"
-            android:text="@string/addbook"
-            android:textColor="@android:color/white"
-            android:theme="@style/MyButton" />
-
+            android:orientation="horizontal"
+            android:id="@+id/linearLayout">
+            <Button
+                android:id="@+id/newBookAdd"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="@string/addbook"
+                android:textColor="@android:color/white"
+                android:theme="@style/MyButton"
+                android:layout_toEndOf="@+id/deleteBook"
+                android:layout_toRightOf="@+id/deleteBook" />
+            <Button
+                android:id="@+id/deleteBook"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
+                android:text="@string/deleteBook"
+                android:layout_weight="1"
+                android:textColor="@android:color/white"
+                android:theme="@style/MyButton" />
+        </LinearLayout>
     </RelativeLayout>
 
 </LinearLayout>

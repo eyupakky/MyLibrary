@@ -15,10 +15,10 @@ import com.squareup.picasso.Picasso;
 import java.util.List;
 
 /**
- * Created by eyupakkaya on 24.12.2017.
+ * Created by eyupakkaya on 10.03.2017.
  */
 
-public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
+public class  ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     ItemClickListener itemClickListener;
     List<SetBookData>list;
     Context context;

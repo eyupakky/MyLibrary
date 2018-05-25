@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by eyupakkaya on 6.01.2018.
+ * Created by eyupakkaya on 10.03.2018.
  */
 
 public class FirebaseSetDataAndGetData {
@@ -28,10 +28,15 @@ public class FirebaseSetDataAndGetData {
     DatabaseReference myRef;
     List<SetBookData>data=null;
     public FirebaseSetDataAndGetData(){}
+    //Kitap Silme
+    public void removeItem(String id){
+        myRef = database.getReference("user/"+MainActivity.userId);
+        myRef.child(id).setValue(null);
+    }
     //Firebase kitap ekleme
     public FirebaseSetDataAndGetData(SetBookData object){
         myRef = database.getReference("user");
-        if (object.getBookId()!=null)
+        if (!object.getBookId().equals(""))
         myRef.child(MainActivity.userId).child(object.getBookId()).setValue(object);
         else {
             myRef = FirebaseDatabase.getInstance().getReference("user");
@@ -43,22 +48,25 @@ public class FirebaseSetDataAndGetData {
     }
     public List<SetBookData> getData(String userId){
         myRef = database.getReference("user/"+userId);
-        data=new ArrayList<>();
+
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                for(DataSnapshot dataSnapshot1:dataSnapshot.getChildren())
-                data.add(dataSnapshot1.getValue(SetBookData.class));
-                if (MainActivity.first){
-                    EventBus.getDefault().post(data);
-                    MainActivity.first=false;
+                data=new ArrayList<>();
+                for(DataSnapshot dataSnapshot1:dataSnapshot.getChildren()) {
+                    try {
+                        data.add(dataSnapshot1.getValue(SetBookData.class));
+                    } catch (Exception e) {
+                        Log.e(TAG, e.getMessage());
+                    }
                 }
-                return;
+                EventBus.getDefault().post(data);
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
             }
         });
+
         return null;
     }
     //Kullanıcı ekleme
@@ -73,7 +81,7 @@ public class FirebaseSetDataAndGetData {
                     Log.d(TAG, "Value is: " + value);
                     if (value==null){
                         myRef = database.getReference("user");
-                        myRef.child(user.getId()).setValue(user.getId());
+                        myRef.child(user.getId()).setValue(user.getEmail());
                         myRef = database.getReference("users");
                         myRef.child(user.getId()).setValue(user);
                     }

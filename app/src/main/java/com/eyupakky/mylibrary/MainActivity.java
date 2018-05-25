@@ -18,6 +18,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Base64;
@@ -40,6 +41,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.squareup.picasso.Picasso;
@@ -63,7 +66,9 @@ public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,View.OnClickListener{
     private ImageView addBook,login;
     Dialog dialog,mBottomSheetDialog;
-    public static boolean first=true;
+    private FirebaseAuth mAuth;
+    private FirebaseAuth.AuthStateListener mAuthListener;
+    public static boolean first=false;
     public static String userId;
     SharedPreferences preferences ;
     SharedPreferences.Editor editor;
@@ -79,16 +84,19 @@ public class MainActivity extends AppCompatActivity implements
     FirebaseSetDataAndGetData fire;
     public ItemAdapter itemAdapter;
     SetBookData setBookData;
-    List<SetBookData>bookDatas;
+    SetBookData viewBookData;
+    public static List<SetBookData>bookDatas;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         bookDatas=new ArrayList<>();
+        viewBookData=new SetBookData();
         setBookData=new SetBookData();
         preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         editor = preferences.edit();
+        mAuth = FirebaseAuth.getInstance();
         addBook=(ImageView)findViewById(R.id.addBook);
         login=(ImageView)findViewById(R.id.login);
         addBook.setOnClickListener(this);
@@ -106,7 +114,20 @@ public class MainActivity extends AppCompatActivity implements
         if(!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
-
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    // User is signed in
+                    Log.d("TAG", "onAuthStateChanged:signed_in:" + user.getUid());
+                } else {
+                    // User is signed out
+                    Log.d("TAG", "onAuthStateChanged:signed_out");
+                }
+                // ...
+            }
+        };
         retrofit =new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory( GsonConverterFactory.create())
@@ -161,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements
         dialog.getWindow ().setGravity (Gravity.BOTTOM);
         dialog.findViewById(R.id.cameraOpen).setOnClickListener(this);
         dialog.findViewById(R.id.newBookAdd).setOnClickListener(this);
+        dialog.findViewById(R.id.deleteBook).setVisibility(View.GONE);
         setBookData.setBookId("");
         dialog.show ();
     }
@@ -174,6 +196,7 @@ public class MainActivity extends AppCompatActivity implements
         dialog.getWindow ().setGravity (Gravity.BOTTOM);
         dialog.findViewById(R.id.cameraOpen).setOnClickListener(this);
         dialog.findViewById(R.id.newBookAdd).setOnClickListener(this);
+        dialog.findViewById(R.id.deleteBook).setOnClickListener(this);
         ((EditText)dialog.findViewById(R.id.editTextExplanation)).setText(data.getBookExplanation());
         for (String author : data.getBookAuthorName())
         ((EditText)dialog.findViewById(R.id.textViewYazar)).setText(((EditText)dialog.findViewById(R.id.textViewYazar)).getText()+author);
@@ -184,18 +207,26 @@ public class MainActivity extends AppCompatActivity implements
     }
     @Subscribe
     public void setListData(final List<SetBookData> data) {
+        if (bookDatas.size()>0)
+            updateList(bookDatas,data);
         recyclerView=(RecyclerView)findViewById(R.id.recyclerView);
+        bookDatas=data;
         LinearLayoutManager manager =new LinearLayoutManager(this);
         manager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(manager);
         itemAdapter = new ItemAdapter(data, new ItemClickListener() {
             @Override
             public void onItemClickListener(View v, int position) {
+                viewBookData=data.get(position);
                 showBookViewDialog(data.get(position));
             }
         });
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(itemAdapter);
+    }
+    public void updateList(List<SetBookData>oldDatas,List<SetBookData>newDatas) {
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new MyDiffCallBack(oldDatas,newDatas));
+        diffResult.dispatchUpdatesTo(itemAdapter);
     }
     public void clearManager(){
         itemAdapter.notifyDataSetChanged();
@@ -273,6 +304,7 @@ public class MainActivity extends AppCompatActivity implements
             User user = new User();
             user.setId(result.getSignInAccount().getId());
             user.setName(result.getSignInAccount().getDisplayName());
+            user.setEmail(result.getSignInAccount().getEmail());
             fire=new FirebaseSetDataAndGetData(user);
             if (user.getId()!=null)
             fire.getData(user.getId());
@@ -287,6 +319,10 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onClick(View view) {
         switch (view.getId()){
+            case R.id.deleteBook:
+                fire=new FirebaseSetDataAndGetData();
+                fire.removeItem(viewBookData.getBookId());
+                break;
             case R.id.login:
                 showDialog();
                 break;
@@ -312,7 +348,21 @@ public class MainActivity extends AppCompatActivity implements
                 List<String>ls=new ArrayList<>();
                 ls.add(((EditText)dialog.findViewById(R.id.textViewYazar)).getText().toString());
                 setBookData.setBookAuthorName(ls);
+                if (setBookData.getBookAuthorName()==null) {
+                    ls.add("null");
+                    setBookData.setBookAuthorName(ls);
+                }
+                if (setBookData.getBookName()==null){
+                    setBookData.setBookName("null");
+                }
+                if (setBookData.getBookImageUri()==null){
+                    setBookData.setBookImageUri("http://eyupakky.com/question.png");
+                }
+                if (setBookData.getBookExplanation()==null){
+                    setBookData.setBookExplanation("null");
+                }
                 fire=new FirebaseSetDataAndGetData(setBookData);
+                dialog.dismiss();
                 break;
         }
     }
@@ -325,6 +375,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onStart() {
         super.onStart();
+        mAuth.addAuthStateListener(mAuthListener);
         EventBus.getDefault().register(this);
         userId=preferences.getString("myid","-1");
         Picasso.with(this).load(preferences.getString("resim","-1")).error(R.mipmap.human).into(login);
@@ -336,6 +387,9 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onStop() {
         super.onStop();
+        if (mAuthListener != null) {
+            mAuth.removeAuthStateListener(mAuthListener);
+        }
         EventBus.getDefault().unregister(this);
     }
 

@@ -3,7 +3,7 @@ package com.eyupakky.mylibrary.Pojo;
 import java.util.List;
 
 /**
- * Created by eyupakkaya on 6.01.2018.
+ * Created by eyupakkaya on 10.03.2018.
  */
 
 public class SetBookData {
